@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar Committee Planner</title>
+<style>
+:root{
+  --ink:#12161c;
+  --ink-soft:#4a5462;
+  --rule:#0f1218;
+  --paper:#ffffff;
+  --slate:#e9ecf1;
+  --navy:#1b2a44;
+  --navy-2:#24365a;
+  --work:#a8bedd;
+  --work-edge:#7d9bc4;
+  --off:#fff34d;
+  --off-edge:#d9cc2a;
+  --blank:#d3d6db;
+  --flag:#b3261e;
+  --perm:#a86400;
+  --perm-bg:#ffd98a;
+  --ok:#1c6b3c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--slate);
+  color:var(--ink);
+  font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:14px;
+  line-height:1.4;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid #2f6df6;outline-offset:2px}
+
+/* ---------- chrome: top bar ---------- */
+.chrome{position:sticky;top:0;z-index:40;background:var(--navy);color:#fff;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.chrome-in{max-width:1500px;margin:0 auto;padding:10px 16px;display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto}
+.brand h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.brand .yr{font-size:13px;color:#a9bcd8;letter-spacing:.04em}
+.yrpick{background:var(--navy-2);color:#fff;border:1px solid #43587e;border-radius:5px;padding:4px 8px;font-size:13px}
+.btn{background:var(--navy-2);border:1px solid #43587e;color:#fff;border-radius:5px;padding:6px 11px;font-size:13px;white-space:nowrap}
+.btn:hover{background:#31477a}
+.btn.primary{background:#f2f5fa;color:var(--navy);border-color:#f2f5fa;font-weight:600}
+.btn.primary:hover{background:#fff}
+.btn.ghost{background:transparent}
+
+/* ---------- ledger strip (signature element) ---------- */
+.ledger{position:sticky;top:47px;z-index:35;background:#f7f8fa;border-bottom:1px solid #c9cfd8}
+.ledger-in{max-width:1500px;margin:0 auto;padding:9px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+.count{display:flex;align-items:center;gap:10px;padding:6px 14px 6px 12px;background:var(--paper);border:1.5px solid var(--rule);border-radius:6px}
+.count .n{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+.count .lbl{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);line-height:1.25}
+.count .delta{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.chip{display:flex;align-items:center;gap:8px;padding:6px 11px;background:var(--paper);border:1px solid #c9cfd8;border-radius:6px;font-size:12.5px}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
+.chip.bad{border-color:var(--flag);background:#fff5f4}
+.chip.bad .dot{background:var(--flag)}
+.chip.warn{border-color:var(--perm);background:#fff9ec}
+.chip.warn .dot{background:var(--perm)}
+.chip b{font-variant-numeric:tabular-nums}
+.chip button{border:0;background:none;text-decoration:underline;padding:0;font-size:12px;color:var(--ink-soft)}
+
+/* ---------- workspace ---------- */
+.wrap{max-width:1500px;margin:0 auto;padding:16px}
+.panel{background:var(--paper);border:1px solid #c9cfd8;border-radius:8px;padding:12px 14px;margin-bottom:14px}
+.panel h2{margin:0 0 8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.pbtn{background:#f2f4f7;border:1px solid #c2c9d4;border-radius:5px;padding:6px 10px;font-size:13px}
+.pbtn:hover{background:#e6eaf1}
+.pbtn small{display:block;font-size:11px;color:var(--ink-soft)}
+.hint{font-size:12.5px;color:var(--ink-soft);margin:8px 0 0}
+
+/* ---------- the sheet (what exports/prints) ---------- */
+.sheet{background:var(--paper);border:1px solid #c9cfd8;border-radius:8px;padding:18px}
+.sheet-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:2.5px solid var(--rule);padding-bottom:8px;margin-bottom:16px}
+.sheet-head h2{margin:0;font-size:19px;font-weight:800;letter-spacing:-.01em}
+.sheet-head .sub{font-size:12px;color:var(--ink-soft)}
+.sheet-head .tally{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.month{border:2.5px solid var(--rule);background:var(--paper);break-inside:avoid}
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 6px;border-bottom:2.5px solid var(--rule)}
+.mhead h3{margin:0;font-size:14.5px;font-weight:800;letter-spacing:-.01em;flex:1;text-align:center}
+.mtool{border:1px solid #c2c9d4;background:#f2f4f7;border-radius:4px;font-size:10px;padding:2px 5px;letter-spacing:.03em;color:var(--ink-soft)}
+.mtool:hover{background:#e2e7ef;color:var(--ink)}
+.dow{display:grid;grid-template-columns:16px repeat(5,1fr);border-bottom:1px solid #b8bec7}
+.dow span{font-size:9.5px;letter-spacing:.1em;text-align:center;color:var(--ink-soft);padding:2px 0}
+.wk{display:grid;grid-template-columns:16px repeat(5,1fr)}
+.gut{border-right:1px solid #b8bec7;background:#f4f6f9;display:flex;align-items:center;justify-content:center;padding:0}
+.gutbtn{width:100%;height:100%;border:0;background:none;font-size:9px;color:#9aa3b0;letter-spacing:.02em}
+.gutbtn:hover{background:#dde3ec;color:var(--ink)}
+.wk.hot .gut{background:#dde3ec}
+
+.day{position:relative;border:1px solid var(--rule);border-top:0;border-left:0;min-height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px 0 3px;background:var(--off);cursor:pointer;user-select:none}
+.wk:first-of-type .day{border-top:1px solid var(--rule)}
+.day:first-of-type{border-left:1px solid var(--rule)}
+.day.work{background:var(--work)}
+.day.blank{background:var(--blank);cursor:default}
+.day .num{font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.day .box{width:13px;height:13px;border:1.6px solid var(--rule);background:var(--paper);display:flex;align-items:center;justify-content:center;flex:none}
+.day.work .box{background:var(--rule)}
+.day.work .box svg{display:block}
+.day .box svg{display:none;width:9px;height:9px;stroke:#fff;stroke-width:2.6;fill:none}
+.day:not(.blank):hover{box-shadow:inset 0 0 0 2.5px #2f6df6;z-index:2}
+.day .hol{position:absolute;top:2px;right:2px;width:6px;height:6px;border-radius:50%;background:var(--flag)}
+.day.needsperm{box-shadow:inset 0 0 0 3px var(--flag)}
+.day.hasperm{box-shadow:inset 0 0 0 3px var(--perm)}
+.pbadge{position:absolute;bottom:1px;left:2px;font-size:8px;font-weight:800;letter-spacing:.04em;padding:0 3px;border-radius:2px;background:var(--flag);color:#fff;border:0;line-height:1.5}
+.day.hasperm .pbadge{background:var(--perm-bg);color:var(--perm)}
+.mfoot{display:flex;justify-content:space-between;padding:3px 7px;font-size:11px;border-top:2.5px solid var(--rule);font-variant-numeric:tabular-nums}
+.mfoot .bad{color:var(--flag);font-weight:800}
+
+/* ---------- notes ---------- */
+.notes{margin-top:20px;break-before:page}
+.notes h3{font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 8px;border-bottom:1.5px solid var(--rule);padding-bottom:4px}
+.notes-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+table{border-collapse:collapse;width:100%;font-size:11.5px}
+th,td{border:1px solid #b8bec7;padding:3px 6px;text-align:left;vertical-align:top}
+th{background:#eef1f5;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.bad td{background:#fff2f1;color:#7d1b15;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;margin-top:12px;align-items:center}
+.legend i{display:inline-block;width:14px;height:14px;border:1.5px solid var(--rule);vertical-align:-3px;margin-right:5px}
+.sig{margin-top:14px;font-size:11px;color:var(--ink-soft);display:flex;gap:30px}
+.sig div{border-top:1px solid var(--rule);padding-top:3px;min-width:200px}
+
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--rule);color:#fff;padding:9px 16px;border-radius:6px;font-size:13px;z-index:80;opacity:0;pointer-events:none;transition:opacity .18s}
+.toast.on{opacity:1}
+
+@media (max-width:1200px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.grid{grid-template-columns:1fr}.notes-cols{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---------- print ---------- */
+@page{size:letter landscape;margin:.35in}
+@media print{
+  body{background:#fff}
+  .chrome,.ledger,.panel,.no-print{display:none!important}
+  .wrap{padding:0;max-width:none}
+  .sheet{border:0;border-radius:0;padding:0}
+  .grid{gap:8px}
+  .month{border-width:2px}
+  .day{min-height:34px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .day,.mhead,.mfoot,.dow span,.gut{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .mhead h3{font-size:12pt}
+  .day .num{font-size:9pt}
+  .mfoot{font-size:8pt}
+  .notes{break-before:page}
+  table{font-size:9pt}
+}
+</style>
+</head>
+<body>
+
+<header class="chrome">
+  <div class="chrome-in">
+    <div class="brand">
+      <h1>Calendar Committee</h1>
+      <span class="yr">school year</span>
+      <select class="yrpick" id="yrpick"></select>
+    </div>
+    <button class="btn ghost" id="undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button class="btn ghost" id="redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
+    <button class="btn" id="loadBtn">Open file</button>
+    <button class="btn" id="saveBtn">Save file</button>
+    <button class="btn" id="pngBtn">Save as image</button>
+    <button class="btn primary" id="printBtn">Print / PDF</button>
+    <input type="file" id="fileIn" accept=".json" hidden>
+  </div>
+</header>
+
+<div class="ledger">
+  <div class="ledger-in" id="ledger"></div>
+</div>
+
+<div class="wrap">
+
+  <div class="panel no-print">
+    <h2>Apply a break</h2>
+    <div class="presets" id="presets"></div>
+    <p class="hint">Click a day to flip it between work and off. Click the arrow at the left of a row to flip the whole week — including the part of that week that falls in the next month. Days that need permission show a red <b>P</b>; click the P to record that permission was granted.</p>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="sheet-head">
+      <div>
+        <h2 id="sheetTitle">School Year Calendar</h2>
+        <div class="sub" id="sheetSub"></div>
+      </div>
+      <div class="tally" id="sheetTally"></div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="legend">
+      <span><i style="background:#a8bedd"></i>Work day</span>
+      <span><i style="background:#fff34d"></i>Off</span>
+      <span><i style="background:#d3d6db"></i>Not a weekday of this month</span>
+      <span><i style="background:#fff;box-shadow:inset 0 0 0 3px #b3261e"></i>Worked, permission needed</span>
+      <span><i style="background:#fff;box-shadow:inset 0 0 0 3px #a86400"></i>Worked, permission granted</span>
+      <span><i style="background:#fff;position:relative"><b style="display:block;width:6px;height:6px;border-radius:50%;background:#b3261e;margin:1px 0 0 5px"></b></i>Federal holiday</span>
+    </div>
+
+    <div class="notes">
+      <div class="notes-cols">
+        <div>
+          <h3>Rule check</h3>
+          <table id="ruleTable"></table>
+          <h3 style="margin-top:16px">Monthly work days</h3>
+          <table id="monthTable"></table>
+        </div>
+        <div>
+          <h3>Federal holidays this year</h3>
+          <table id="holTable"></table>
+          <h3 style="margin-top:16px">Break definitions</h3>
+          <table id="breakTable"></table>
+        </div>
+      </div>
+      <div class="sig">
+        <div>Committee chair / date</div>
+        <div>Board approval / date</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================ date helpers ============================ */
+const MN=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const mk=(y,m,d)=>new Date(y,m,d);
+const addDays=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+const isWeekday=d=>d.getDay()>=1&&d.getDay()<=5;
+const fmt=d=>`${MN[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}`;
+function nthDow(y,m,dow,n){const f=mk(y,m,1);return mk(y,m,1+((dow-f.getDay()+7)%7)+(n-1)*7);}
+function lastDow(y,m,dow){const l=mk(y,m+1,0);return mk(y,m,l.getDate()-((l.getDay()-dow+7)%7));}
+function observed(d){if(d.getDay()===6)return addDays(d,-1);if(d.getDay()===0)return addDays(d,1);return d;}
+function rangeWeekdays(a,b){const out=[];let c=new Date(a);while(c<=b){if(isWeekday(c))out.push(new Date(c));c=addDays(c,1);}return out;}
+
+/* ============================ calendar rules ============================ */
+// School year runs Aug 1 (startYear) through Jul 31 (startYear+1).
+function months(y0){const out=[];for(let i=0;i<12;i++){const m=(7+i)%12;const y=i<5?y0:y0+1;out.push({y,m});}return out;}
+
+function federalHolidays(y0){
+  const y1=y0+1,H=[];
+  const add=(name,date,note)=>{const o=observed(date);H.push({name,actual:date,date:o,shifted:iso(o)!==iso(date),note:note||""});};
+  add("Independence Day (start of year)",mk(y0,6,4));
+  add("Labor Day",nthDow(y0,8,1,1));
+  add("Columbus Day / Indigenous Peoples' Day",nthDow(y0,9,1,2));
+  add("Veterans Day",mk(y0,10,11));
+  add("Thanksgiving Day",nthDow(y0,10,4,4));
+  add("Christmas Day",mk(y0,11,25));
+  add("New Year's Day",mk(y1,0,1));
+  add("Martin Luther King Jr. Day",nthDow(y1,0,1,3));
+  add("Presidents' Day",nthDow(y1,1,1,3));
+  add("Memorial Day",lastDow(y1,4,1));
+  add("Juneteenth",mk(y1,5,19));
+  add("Independence Day",mk(y1,6,4));
+  return H.filter(h=>isWeekday(h.date));
+}
+
+function winterBreak(y0){
+  // Return Monday = first Monday of January; if that is Jan 1, use Jan 8.
+  let ret=nthDow(y0+1,0,1,1);
+  if(ret.getDate()===1)ret=addDays(ret,7);
+  const start=addDays(ret,-17); // always the Friday that opens the break
+  return {start,end:addDays(ret,-1),ret};
+}
+function springBreak(y0){
+  const mon=nthDow(y0+1,3,1,1);       // first full week of April
+  return {start:addDays(mon,-3),end:addDays(mon,4),mon}; // + the Friday before
+}
+function thanksgiving(y0){
+  const thu=nthDow(y0,10,4,4);
+  return {wed:addDays(thu,-1),thu,fri:addDays(thu,1)};
+}
+function midWinter(y0){
+  const mon=nthDow(y0+1,1,1,3);       // week beginning with Presidents' Day
+  return {start:mon,end:addDays(mon,4)};
+}
+
+/* ============================ state ============================ */
+const TARGET=182, MIN_PER_MONTH=8;
+let YR=2026, days={}, perms={}, undoStack=[], redoStack=[], HOL={}, WEEKS={};
+
+function allDays(y0){const out=[];for(const {y,m} of months(y0)){const last=mk(y,m+1,0).getDate();for(let d=1;d<=last;d++){const dt=mk(y,m,d);if(isWeekday(dt))out.push(dt);}}return out;}
+
+function initYear(y0,preserve){
+  YR=y0;
+  HOL={};
+  federalHolidays(y0).forEach(h=>{HOL[iso(h.date)]=h;});
+  if(!preserve){
+    days={};perms={};
+    allDays(y0).forEach(d=>{days[iso(d)]="work";});
+    applyPreset("federal",true);
+    applyPreset("thanksgiving",true);
+    applyPreset("winter",true);
+    applyPreset("spring",true);
+  }
+  undoStack=[];redoStack=[];
+}
+
+function snapshot(){undoStack.push(JSON.stringify({days,perms}));if(undoStack.length>60)undoStack.shift();redoStack=[];}
+function restore(s){const o=JSON.parse(s);days=o.days;perms=o.perms;}
+
+function setOff(list){list.forEach(d=>{const k=iso(d);if(k in days){days[k]="off";delete perms[k];}});}
+function setWork(list){list.forEach(d=>{const k=iso(d);if(k in days)days[k]="work";});}
+
+function applyPreset(which,silent){
+  if(!silent)snapshot();
+  if(which==="federal")setOff(federalHolidays(YR).map(h=>h.date));
+  if(which==="thanksgiving"){const t=thanksgiving(YR);setOff([t.wed,t.thu,t.fri]);}
+  if(which==="winter"){const w=winterBreak(YR);setOff(rangeWeekdays(w.start,w.end));}
+  if(which==="spring"){const s=springBreak(YR);setOff(rangeWeekdays(s.start,s.end));}
+  if(which==="midwinter"){const m=midWinter(YR);setOff(rangeWeekdays(m.start,m.end));}
+  if(which==="clear"){Object.keys(days).forEach(k=>{days[k]="work";});perms={};}
+  if(!silent){render();toast(PRESET_MSG[which]||"Applied");}
+}
+const PRESET_MSG={federal:"Federal holidays set to off",thanksgiving:"Thanksgiving break set to off",winter:"Winter break set to off",spring:"Spring break set to off",midwinter:"Mid-winter break set to off",clear:"Every weekday set back to work"};
+
+/* ---- permission rules ---- */
+function permissionReason(dt){
+  if(dt.getMonth()===6&&dt.getDay()===5)return "Friday in July";
+  const t=thanksgiving(YR);
+  if(iso(dt)===iso(t.wed))return "Wednesday of Thanksgiving break";
+  return null;
+}
+
+/* ============================ validation ============================ */
+function tally(){
+  const per={},t={total:0,short:[],julyNoPerm:[],thanksNoPerm:[],permGranted:[]};
+  for(const {y,m} of months(YR))per[`${y}-${m}`]=0;
+  Object.keys(days).forEach(k=>{
+    if(days[k]!=="work")return;
+    const [Y,M,D]=k.split("-").map(Number);const dt=mk(Y,M-1,D);
+    t.total++;per[`${Y}-${M-1}`]++;
+    const r=permissionReason(dt);
+    if(r){
+      if(perms[k])t.permGranted.push({dt,r});
+      else if(r[0]==="F")t.julyNoPerm.push(dt);
+      else t.thanksNoPerm.push(dt);
+    }
+  });
+  for(const {y,m} of months(YR))if(per[`${y}-${m}`]<MIN_PER_MONTH)t.short.push({y,m,n:per[`${y}-${m}`]});
+  t.per=per;
+  return t;
+}
+
+/* ============================ render ============================ */
+function monthRows(y,m){
+  const rows=[];const last=mk(y,m+1,0).getDate();let cur=null;
+  for(let d=1;d<=last;d++){
+    const dt=mk(y,m,d);if(!isWeekday(dt))continue;
+    const wid=iso(addDays(dt,-(dt.getDay()-1)));
+    if(!cur||cur.wid!==wid){cur={wid,cells:[null,null,null,null,null]};rows.push(cur);}
+    cur.cells[dt.getDay()-1]=dt;
+  }
+  return rows;
+}
+
+const CHECK='<svg viewBox="0 0 12 12"><polyline points="2,6.4 4.6,9 10,3"/></svg>';
+
+function render(){
+  const t=tally();
+  WEEKS={};
+  const grid=document.getElementById("grid");
+  const ms=months(YR);
+  // column-major placement: col1 = Aug/Sep/Oct, col2 = Nov/Dec/Jan, ...
+  let html="";
+  for(let r=0;r<3;r++)for(let c=0;c<4;c++){
+    const idx=c*3+r,{y,m}=ms[idx];
+    html+=monthCard(y,m,t.per[`${y}-${m}`],r+1,c+1);
+  }
+  grid.innerHTML=html;
+
+  document.getElementById("sheetTitle").textContent=`${YR}\u2013${String(YR+1).slice(2)} School Year Calendar`;
+  document.getElementById("sheetSub").textContent=`August ${YR} \u2013 July ${YR+1} \u00b7 weekdays only \u00b7 drafted by the calendar committee`;
+  document.getElementById("sheetTally").innerHTML=`${t.total} work days scheduled<br><span style="font-weight:400;color:#4a5462">target ${TARGET} \u00b7 ${t.total===TARGET?"on target":(t.total>TARGET?t.total-TARGET+" over":TARGET-t.total+" under")}</span>`;
+
+  renderLedger(t);renderTables(t);
+  try{if(window.storage)window.storage.set("cal:"+YR,JSON.stringify({days,perms}));}catch(e){}
+  document.getElementById("undo").disabled=!undoStack.length;
+  document.getElementById("redo").disabled=!redoStack.length;
+}
+
+function monthCard(y,m,count,row,col){
+  const rows=monthRows(y,m);
+  let h=`<div class="month" style="grid-row:${row};grid-column:${col}">
+    <div class="mhead"><button class="mtool no-print" data-mall="off" data-y="${y}" data-m="${m}">All off</button>
+    <h3>${MN[m]} ${y}</h3>
+    <button class="mtool no-print" data-mall="work" data-y="${y}" data-m="${m}">All work</button></div>
+    <div class="dow"><span></span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span></div>`;
+  rows.forEach(r=>{
+    (WEEKS[r.wid]=WEEKS[r.wid]||[]);
+    h+=`<div class="wk" data-wid="${r.wid}"><div class="gut no-print"><button class="gutbtn" data-week="${r.wid}" title="Flip this whole week">\u21c4</button></div>`;
+    r.cells.forEach(dt=>{
+      if(!dt){h+=`<div class="day blank"></div>`;return;}
+      const k=iso(dt),st=days[k],hol=HOL[k],reason=permissionReason(dt);
+      let cls="day "+(st==="work"?"work":"off");
+      if(st==="work"&&reason)cls+=perms[k]?" hasperm":" needsperm";
+      const title=[fmt(dt),hol?"Federal holiday: "+hol.name:"",reason?"Needs permission to work ("+reason+")":""].filter(Boolean).join(" \u2014 ");
+      h+=`<div class="${cls}" data-k="${k}" title="${title}">
+        <div class="box">${CHECK}</div><div class="num">${dt.getDate()}</div>
+        ${hol?'<span class="hol"></span>':""}
+        ${st==="work"&&reason?`<button class="pbadge" data-perm="${k}" title="${perms[k]?"Permission granted \u2014 click to clear":"Click to record permission granted"}">${perms[k]?"P\u2713":"P"}</button>`:""}
+      </div>`;
+    });
+    h+=`</div>`;
+  });
+  h+=`<div class="mfoot"><span>work days</span><span class="${count<MIN_PER_MONTH?"bad":""}">${count}${count<MIN_PER_MONTH?" \u2716":""}</span></div></div>`;
+  return h;
+}
+
+function renderLedger(t){
+  const d=t.total-TARGET;
+  const chip=(ok,label,extra)=>`<div class="chip ${ok==="bad"?"bad":ok==="warn"?"warn":""}"><span class="dot"></span><span>${label}</span>${extra||""}</div>`;
+  let h=`<div class="count"><span class="n">${t.total}</span><span class="lbl">work days<br>of ${TARGET}</span><span class="delta" style="color:${d===0?"var(--ok)":"var(--flag)"}">${d===0?"\u2713":(d>0?"+"+d:d)}</span></div>`;
+  h+=chip(t.short.length?"bad":"ok",t.short.length?`${t.short.length} month${t.short.length>1?"s":""} under ${MIN_PER_MONTH} work days`:`Every month has ${MIN_PER_MONTH}+ work days`);
+  h+=chip(t.julyNoPerm.length?"bad":"ok",t.julyNoPerm.length?`${t.julyNoPerm.length} July Friday${t.julyNoPerm.length>1?"s":""} worked without permission`:"No July Fridays worked without permission");
+  h+=chip(t.thanksNoPerm.length?"warn":"ok",t.thanksNoPerm.length?"Thanksgiving Wednesday worked without permission":"Thanksgiving Wednesday clear");
+  if(t.permGranted.length)h+=chip("warn",`${t.permGranted.length} day${t.permGranted.length>1?"s":""} worked with permission`);
+  document.getElementById("ledger").innerHTML=h;
+}
+
+function renderTables(t){
+  const d=t.total-TARGET;
+  const row=(rule,status,detail,bad)=>`<tr class="${bad?"bad":""}"><td>${rule}</td><td class="n">${status}</td><td>${detail}</td></tr>`;
+  document.getElementById("ruleTable").innerHTML=
+    `<tr><th>Rule</th><th>Result</th><th>Detail</th></tr>`+
+    row(`${TARGET} work days in the year`,t.total,d===0?"Meets target":(d>0?`${d} over target`:`${-d} under target`),d!==0)+
+    row(`8+ work days every month`,t.short.length?"Fails":"Meets",t.short.length?t.short.map(s=>`${MN[s.m].slice(0,3)} ${s.y}: ${s.n}`).join("; "):"All 12 months qualify",t.short.length)+
+    row(`No Fridays worked in July without permission`,t.julyNoPerm.length?"Fails":"Meets",t.julyNoPerm.length?t.julyNoPerm.map(fmt).join("; "):"None scheduled",t.julyNoPerm.length)+
+    row(`Thanksgiving Wednesday only with permission`,t.thanksNoPerm.length?"Fails":"Meets",t.thanksNoPerm.length?t.thanksNoPerm.map(fmt).join("; "):"Not scheduled without permission",t.thanksNoPerm.length)+
+    (t.permGranted.length?row("Permission recorded","Noted",t.permGranted.map(p=>`${fmt(p.dt)} (${p.r})`).join("; "),false):"");
+
+  let mt=`<tr><th>Month</th><th>Work days</th><th>Month</th><th>Work days</th></tr>`;
+  const ms=months(YR);
+  for(let i=0;i<6;i++){
+    const a=ms[i],b=ms[i+6],na=t.per[`${a.y}-${a.m}`],nb=t.per[`${b.y}-${b.m}`];
+    mt+=`<tr><td>${MN[a.m]} ${a.y}</td><td class="n" ${na<MIN_PER_MONTH?'style="color:#b3261e;font-weight:700"':""}>${na}</td><td>${MN[b.m]} ${b.y}</td><td class="n" ${nb<MIN_PER_MONTH?'style="color:#b3261e;font-weight:700"':""}>${nb}</td></tr>`;
+  }
+  document.getElementById("monthTable").innerHTML=mt;
+
+  let ht=`<tr><th>Holiday</th><th>Observed</th><th>Status on this calendar</th></tr>`;
+  federalHolidays(YR).forEach(h=>{
+    const k=iso(h.date),st=days[k]==="work"?"Scheduled as a work day":"Off";
+    ht+=`<tr class="${days[k]==="work"?"bad":""}"><td>${h.name}${h.shifted?" (observed)":""}</td><td class="n">${fmt(h.date)}</td><td>${st}</td></tr>`;
+  });
+  document.getElementById("holTable").innerHTML=ht+`<tr><td colspan="3" style="background:#f7f8fa;font-size:10.5px">Federal holidays are normally days off. Weekend holidays are listed on their observed weekday. Juneteenth and Independence Day are shown when they land on a weekday inside the school year.</td></tr>`;
+
+  const w=winterBreak(YR),s=springBreak(YR),tg=thanksgiving(YR),mw=midWinter(YR);
+  document.getElementById("breakTable").innerHTML=
+   `<tr><th>Break</th><th>Dates</th><th>Note</th></tr>
+    <tr><td>Thanksgiving</td><td class="n">${fmt(tg.wed)} \u2013 Sunday</td><td>Wednesday may be worked with permission</td></tr>
+    <tr><td>Winter</td><td class="n">${fmt(w.start)} \u2013 ${fmt(w.end)}</td><td>Two-week break covering Christmas and New Year's; return ${fmt(w.ret)}</td></tr>
+    <tr><td>Mid-winter</td><td class="n">${fmt(mw.start)} \u2013 ${fmt(mw.end)}</td><td>If scheduled: week beginning with Presidents' Day; may move with permission</td></tr>
+    <tr><td>Spring</td><td class="n">${fmt(s.start)} \u2013 ${fmt(s.end)}</td><td>First full week of April plus the Friday before</td></tr>`;
+}
+
+/* ============================ interaction ============================ */
+document.getElementById("grid").addEventListener("click",e=>{
+  const perm=e.target.closest("[data-perm]");
+  if(perm){const k=perm.dataset.perm;snapshot();perms[k]?delete perms[k]:perms[k]=true;render();return;}
+  const wk=e.target.closest("[data-week]");
+  if(wk){toggleWeek(wk.dataset.week);return;}
+  const mall=e.target.closest("[data-mall]");
+  if(mall){
+    snapshot();const y=+mall.dataset.y,m=+mall.dataset.m;
+    Object.keys(days).forEach(k=>{const [Y,M]=k.split("-").map(Number);if(Y===y&&M-1===m){days[k]=mall.dataset.mall;if(mall.dataset.mall==="off")delete perms[k];}});
+    render();return;
+  }
+  const cell=e.target.closest(".day");
+  if(cell&&!cell.classList.contains("blank")){
+    const k=cell.dataset.k;snapshot();
+    days[k]=days[k]==="work"?"off":"work";
+    if(days[k]==="off")delete perms[k];
+    render();
+  }
+});
+document.getElementById("grid").addEventListener("mouseover",e=>{
+  const b=e.target.closest("[data-week]");
+  document.querySelectorAll(".wk.hot").forEach(x=>x.classList.remove("hot"));
+  if(b)document.querySelectorAll(`.wk[data-wid="${b.dataset.week}"]`).forEach(x=>x.classList.add("hot"));
+});
+
+function toggleWeek(wid){
+  const mon=new Date(wid+"T00:00:00");
+  const list=[0,1,2,3,4].map(i=>iso(addDays(mon,i))).filter(k=>k in days);
+  if(!list.length)return;
+  const anyWork=list.some(k=>days[k]==="work");
+  snapshot();
+  list.forEach(k=>{days[k]=anyWork?"off":"work";if(anyWork)delete perms[k];});
+  render();
+}
+
+/* presets */
+const PRESETS=[
+  ["federal","Federal holidays off","all 11 observed dates"],
+  ["thanksgiving","Thanksgiving break","Wed\u2013Fri off"],
+  ["winter","Winter break","two weeks + Friday before"],
+  ["midwinter","Mid-winter break","Presidents' Day week"],
+  ["spring","Spring break","first full week of April + Friday before"],
+  ["clear","Reset to all work days","clears every day off"]
+];
+document.getElementById("presets").innerHTML=PRESETS.map(([id,l,s])=>`<button class="pbtn" data-preset="${id}">${l}<small>${s}</small></button>`).join("");
+document.getElementById("presets").addEventListener("click",e=>{const b=e.target.closest("[data-preset]");if(b)applyPreset(b.dataset.preset);});
+
+/* year picker */
+const yp=document.getElementById("yrpick");
+for(let y=2023;y<=2032;y++)yp.innerHTML+=`<option value="${y}">${y}\u2013${String(y+1).slice(2)}</option>`;
+yp.value=YR;
+yp.addEventListener("change",async()=>{
+  const y=+yp.value;initYear(y,false);
+  try{if(window.storage){const r=await window.storage.get("cal:"+y);if(r){const o=JSON.parse(r.value);days=o.days;perms=o.perms;}}}catch(e){}
+  render();toast(`Loaded ${y}\u2013${String(y+1).slice(2)}`);
+});
+
+/* undo / redo */
+document.getElementById("undo").onclick=()=>{if(!undoStack.length)return;redoStack.push(JSON.stringify({days,perms}));restore(undoStack.pop());render();};
+document.getElementById("redo").onclick=()=>{if(!redoStack.length)return;undoStack.push(JSON.stringify({days,perms}));restore(redoStack.pop());render();};
+document.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();e.shiftKey?document.getElementById("redo").click():document.getElementById("undo").click();}
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="p"){/* let the browser print */}
+});
+
+/* save / open / export */
+function download(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);}
+document.getElementById("saveBtn").onclick=()=>{
+  const t=tally();
+  download(`calendar-${YR}-${String(YR+1).slice(2)}-${t.total}days.json`,
+    new Blob([JSON.stringify({year:YR,days,perms,savedAt:new Date().toISOString()},null,1)],{type:"application/json"}));
+  toast("Calendar file saved");
+};
+document.getElementById("loadBtn").onclick=()=>document.getElementById("fileIn").click();
+document.getElementById("fileIn").onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const o=JSON.parse(r.result);
+      if(!o.days||!o.year)throw new Error("bad file");
+      initYear(o.year,true);yp.value=o.year;days=o.days;perms=o.perms||{};render();toast("Calendar opened");
+    }catch(err){toast("That file isn't a saved calendar. Pick a .json saved from this app.");}
+    e.target.value="";
+  };
+  r.readAsText(f);
+};
+document.getElementById("printBtn").onclick=()=>window.print();
+document.getElementById("pngBtn").onclick=async()=>{
+  toast("Building image\u2026");
+  try{
+    if(!window.html2canvas)await new Promise((res,rej)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";s.onload=res;s.onerror=rej;document.head.appendChild(s);});
+    document.querySelectorAll(".no-print").forEach(n=>n.style.visibility="hidden");
+    const c=await html2canvas(document.getElementById("sheet"),{scale:2,backgroundColor:"#ffffff"});
+    document.querySelectorAll(".no-print").forEach(n=>n.style.visibility="");
+    c.toBlob(b=>{download(`calendar-${YR}-${String(YR+1).slice(2)}.png`,b);toast("Image saved");});
+  }catch(err){
+    document.querySelectorAll(".no-print").forEach(n=>n.style.visibility="");
+    toast("Image export needs internet access. Use Print / PDF instead.");
+  }
+};
+
+let tid;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(tid);tid=setTimeout(()=>t.classList.remove("on"),2600);}
+
+/* boot */
+(async function(){
+  initYear(YR,false);
+  try{if(window.storage){const r=await window.storage.get("cal:"+YR);if(r){const o=JSON.parse(r.value);days=o.days;perms=o.perms||{};}}}catch(e){}
+  render();
+})();
+</script>
+</body>
+</html>
